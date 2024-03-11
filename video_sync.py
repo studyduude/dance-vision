@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 from moviepy.editor import VideoFileClip, concatenate_videoclips, clips_array
 import os
+import subprocess
 
 AUDIO_EXT = ['.m4a','.wav','.mp3','.flac']
 RAM_LIM = 1000. # MB, completely arbitrary, just for warning
@@ -94,6 +95,15 @@ def extract_audio(video_path, output_audio_path):
     command = f"ffmpeg -i {video_path} -ab 160k -ac 2 -ar 44100 -vn {output_audio_path}"
     subprocess.run(command, shell=True)
 
+def get_video_rotation(video_path):
+    command = f"ffprobe -loglevel error -select_streams v:0 -show_entries side_data=rotation -of default=nw=1:nk=1 {video_path} | head -1"
+    try:
+        rotation = subprocess.check_output(command, shell=True, timeout=1.5).decode('utf-8').strip()
+        return int(rotation) if rotation else 0
+    except:
+        return 0
+
+
 def create_composite_video(json_file, output_video_path):
     # Charger les données du fichier JSON
     with open(json_file, 'r') as f:
@@ -105,13 +115,21 @@ def create_composite_video(json_file, output_video_path):
 
     # Trouver la vidéo de base et préparer les clips
     for key, video_info in videos_info.items():
+        to_print=video_info['video_path']
         clip = VideoFileClip(video_info['video_path'])
+        if video_info['to_resize'] == 1:
+            print(f'the video {to_print} is to rotate')
+            w, h = clip.size
+            print(f'old clip size is: {clip.size}')
+            clip = clip.resize(newsize=(h,w))
+            print(f'new clip size is: {clip.size}')
         if video_info['is_base']:
             base_clip = clip
             base_offset = video_info['tshift_from_base_sec']
         else:
             offsets.append(video_info['tshift_from_base_sec'])
             clips.append(clip)
+        
 
     # Ajuster les clips non-base selon l'offset
     for i, clip in enumerate(clips):
@@ -140,6 +158,7 @@ def files_to_process(video_path_list, audio_path_list):
     dur_list = []
     results_dict = {}
     tot_MB = 0.
+    to_resize = 0
     for i, filepath in enumerate(audio_path_list):
         filepath = Path(filepath)
         if filepath.suffix in AUDIO_EXT:
@@ -151,7 +170,18 @@ def files_to_process(video_path_list, audio_path_list):
             tot_MB += file._arr_size_MB
             if tot_MB > RAM_LIM:
                 print(RAM_WARNING)
-            results_dict[filename] = {'video_path': video_path_list[i],
+            video_path = video_path_list[i]
+            if video_path.endswith('.mov') or video_path.endswith('.MOV'):
+                rotation = get_video_rotation(video_path)
+                # Check if the rotation is a multiple of 90 degrees
+                if rotation % 90 == 0 and rotation % 180 != 0:
+                        video_clip = VideoFileClip(video_path)
+                        to_resize = 1
+                else:
+                    to_resize = 0
+                    
+            results_dict[filename] = {'video_path': video_path,
+                                    'to_resize': to_resize,
                                     'audio_path': str(file.path.resolve()),
                                     'sr': file.sr,
                                     'dur_sec': file.dur_sec,
@@ -328,7 +358,7 @@ def extract_audio_from_videos(video_folder, output_folder):
     audio_path_list = []
     # Parcourez tous les fichiers du dossier de vidéos
     for video_filename in os.listdir(video_folder):
-        if video_filename.endswith(('.mp4', '.mkv', '.avi', '.MP4')):  # Ajoutez d'autres formats si nécessaire
+        if video_filename.endswith(('.mp4', '.mkv', '.avi', '.MP4', '.mov', '.MOV')):  # Ajoutez d'autres formats si nécessaire
             video_path = os.path.join(video_folder, video_filename)
             output_audio_path = os.path.join(output_folder, video_filename.rsplit('.', 1)[0] + '.wav')
             video_path_list.append(video_path)
@@ -351,4 +381,4 @@ if __name__ == "__main__":
     final_path = sys.argv[3]
     video_path_list, audio_path_list = extract_audio_from_videos(video_path, audio_path)
     json_path = create_metadata(video_path_list, audio_path_list, final_path)
-    create_composite_video(json_path, './choregraphy/chore3/final.mp4')
+    create_composite_video(json_path, './choregraphy/chore4/final.mp4')
