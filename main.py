@@ -35,6 +35,7 @@ async def upload_audio(audio: UploadFile = File(...)):
         if len(received_audios) >= 2:
             print("About to create metadata")
             json_path = create_metadata(received_audios, METADATA_DIRECTORY)
+            logging.debug(f"Metadata created at {json_path}")
             print(f"Metadata created at: {json_path}")
             
             for audio_path in received_audios:
