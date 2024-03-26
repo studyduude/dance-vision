@@ -7,6 +7,7 @@ from pathlib import Path
 from moviepy.editor import VideoFileClip, concatenate_videoclips, clips_array
 import os
 import subprocess
+import glob
 
 AUDIO_EXT = ['.m4a','.wav','.mp3','.flac']
 RAM_LIM = 1000. # MB, completely arbitrary, just for warning
@@ -103,6 +104,26 @@ def get_video_rotation(video_path):
     except:
         return 0
 
+def simple_json(json_path):
+    # Charger le fichier JSON généré par create_metadata
+    with open(json_path, 'r') as file:
+        data = json.load(file)
+    
+    # Dictionnaire pour stocker les noms des fichiers audio, leurs offsets et si c'est la base
+    simple_data = {}
+    
+    # Parcourir le fichier JSON pour extraire les informations nécessaires
+    for audio_file, details in data.items():
+        # Le nom du fichier audio sans l'extension "_audio"
+        audio_name = Path(details["audio_path"]).stem.replace("_audio", "")
+        # L'offset associé au fichier audio
+        offset = float(details["tshift_from_base_sec"])
+        # Est-ce que ce fichier audio est la base ?
+        is_base = details["is_base"]
+        # Ajouter les informations au dictionnaire
+        simple_data[audio_name] = {"offset": offset, "is_base": is_base}
+    
+    return simple_data
 
 def create_composite_video(json_file, output_video_path):
     # Charger les données du fichier JSON
@@ -152,13 +173,15 @@ def create_composite_video(json_file, output_video_path):
     final_clip.write_videofile(output_video_path, codec="libx264", audio_codec="aac")
 
 
-def files_to_process(video_path_list, audio_path_list):
+def files_to_process(audio_path_list, video_path_list=None):
     audio_files = []
     sr_list = []
     dur_list = []
     results_dict = {}
     tot_MB = 0.
     to_resize = 0
+    if video_path_list == None:
+        video_path_list = ['']*len(audio_path_list)
     for i, filepath in enumerate(audio_path_list):
         filepath = Path(filepath)
         if filepath.suffix in AUDIO_EXT:
@@ -293,10 +316,10 @@ class AudioFile:
             resampled_self = AudioFile(new_data, new_sr)
             return resampled_self
 
-def create_metadata(video_path_list, audio_path_list, file_path):
+def create_metadata(audio_path_list, result_file_path, video_path_list=None):
     print("Loading audio files...")
     
-    audio_files, sr_list, dur_list, results_dict = files_to_process(video_path_list, audio_path_list)
+    audio_files, sr_list, dur_list, results_dict = files_to_process(audio_path_list, video_path_list)
 
     # Get "most common" sample rate
     sr_arr = np.array(sr_list)
@@ -346,7 +369,7 @@ def create_metadata(video_path_list, audio_path_list, file_path):
             warp_dict['tshift_from_base_sec'] = 0.
 
     
-    json_path = save_metadata(results_dict, file_path, 'metadata')
+    json_path = save_metadata(results_dict, result_file_path, 'metadata')
 
     return json_path
 
@@ -376,9 +399,12 @@ def extract_audio_from_videos(video_folder, output_folder):
     return video_path_list, audio_path_list
 
 if __name__ == "__main__":
-    video_path = sys.argv[1]
-    audio_path = sys.argv[2]
-    final_path = sys.argv[3]
-    video_path_list, audio_path_list = extract_audio_from_videos(video_path, audio_path)
-    json_path = create_metadata(video_path_list, audio_path_list, final_path)
-    create_composite_video(json_path, './choregraphy/chore4/final.mp4')
+    #video_path = sys.argv[3]
+    #audio_path = sys.argv[2]
+    #final_path = sys.argv[1]
+    #video_path_list, audio_path_list = extract_audio_from_videos(video_path, audio_path)
+    mypath='./choregraphy/chore1/audios'
+    audio_path_list = glob.glob('./choregraphy/chore1/audios/*')
+    print(audio_path_list)
+    json_path = create_metadata(audio_path_list, './choregraphy/chore1/')
+    #create_composite_video(json_path, './choregraphy/chore6/final.mp4')
