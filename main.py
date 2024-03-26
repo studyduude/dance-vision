@@ -19,6 +19,8 @@ received_audios = []
 
 @app.post("/upload-audio/")
 async def upload_audio(audio: UploadFile = File(...)):
+    content = await audio.read()
+    print(f"Received file content size: {len(content)} bytes")
     try:
         print(f"Received file: {audio.filename}")
         print(f"File size: {audio.file._file.tell()} bytes")
