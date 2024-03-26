@@ -12,7 +12,10 @@ if not UPLOAD_DIRECTORY.exists():
     UPLOAD_DIRECTORY.mkdir(parents=True)
 print(f"Upload directory is set to {UPLOAD_DIRECTORY.absolute()}")
 
-METADATA_DIRECTORY = './'
+METADATA_DIRECTORY = Path("metadata")
+if not METADATA_DIRECTORY.exists():
+    METADATA_DIRECTORY.mkdir(parents=True)
+print(f"Metadata directory is set to {METADATA_DIRECTORY.absolute()}")
 received_audios = []
 
 
