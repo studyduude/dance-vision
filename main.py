@@ -10,6 +10,7 @@ app = FastAPI()
 UPLOAD_DIRECTORY = Path("uploaded_audios")
 if not UPLOAD_DIRECTORY.exists():
     UPLOAD_DIRECTORY.mkdir(parents=True)
+print(f"Upload directory is set to {UPLOAD_DIRECTORY.absolute()}")
 
 METADATA_DIRECTORY = './'
 received_audios = []
@@ -19,9 +20,12 @@ received_audios = []
 @app.post("/upload-audio/")
 async def upload_audio(audio: UploadFile = File(...)):
     try:
+        print(f"Received file: {audio.filename}")
+        print(f"File size: {audio.file._file.tell()} bytes")
         file_location = UPLOAD_DIRECTORY / audio.filename
         with open(file_location, "wb") as buffer:
             shutil.copyfileobj(audio.file, buffer)
+        print(f"File saved to {file_location}")
         
         received_audios.append(str(file_location))
 
