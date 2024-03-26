@@ -105,9 +105,13 @@ def find_delay_sec(sig1, sig2, sr):
 
 
 def load_audio(path_to_file):
-    file = Path(path_to_file)
-    data, sr = librosa.load(str(file.resolve()), sr=None)
-    return AudioFile(data, sr, path=file)
+    try:
+        file = Path(path_to_file)
+        data, sr = librosa.load(str(file.resolve()), sr=None)
+        return AudioFile(data, sr, path=file)
+    except Exception as e:
+        logger.error(f"Erreur lors du chargement de l'audio : {e}")
+        return None
 
 def extract_audio(video_path, output_audio_path):
     command = f"ffmpeg -i {video_path} -ab 160k -ac 2 -ar 44100 -vn {output_audio_path}"
