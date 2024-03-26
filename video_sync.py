@@ -9,6 +9,23 @@ import os
 import subprocess
 import glob
 
+import logging
+
+# Configure le logger pour 'video_sync'
+logger = logging.getLogger('video_sync')
+logger.setLevel(logging.INFO)  # Configurer le niveau de log global
+
+# Créer un gestionnaire de log qui écrit dans sys.stderr
+handler = logging.StreamHandler()
+handler.setLevel(logging.INFO)  # Configurer le niveau pour ce gestionnaire
+
+# Créer et configurer un formateur pour les logs
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+
+# Ajouter le gestionnaire au logger
+logger.addHandler(handler)
+
 AUDIO_EXT = ['.m4a','.wav','.mp3','.flac']
 RAM_LIM = 1000. # MB, completely arbitrary, just for warning
 RAM_WARNING = 'Warning: Using over {0:.1f}GB RAM'.format(RAM_LIM/1e3)
@@ -180,8 +197,10 @@ def files_to_process(audio_path_list, video_path_list=None):
     results_dict = {}
     tot_MB = 0.
     to_resize = 0
+    logger.info("1")
     if video_path_list == None:
         video_path_list = ['']*len(audio_path_list)
+    logger.info("2")
     for i, filepath in enumerate(audio_path_list):
         filepath = Path(filepath)
         if filepath.suffix in AUDIO_EXT:
@@ -212,10 +231,11 @@ def files_to_process(audio_path_list, video_path_list=None):
         else:
             print('{0} is not supported...'.format(filepath.suffix))
             print('Skipping {0}...'.format(filepath.name))
-
+    logger.info("3")
     print("Files to process:")
     for file in audio_files:
         print('- {0}'.format(file.path.name))
+    logger.info("4")
     print('')
 
     return audio_files, sr_list, dur_list, results_dict
@@ -317,7 +337,7 @@ class AudioFile:
             return resampled_self
 
 def create_metadata(audio_path_list, result_file_path, video_path_list=None):
-    print("Loading audio files...")
+    logger.info("Loading audio files...")
     
     audio_files, sr_list, dur_list, results_dict = files_to_process(audio_path_list, video_path_list)
 
@@ -327,10 +347,12 @@ def create_metadata(audio_path_list, result_file_path, video_path_list=None):
     sr_common = sr_uniq[sr_counts.argmax()]
 
     # Resample any signals that are not already "most common" sample rate
+    logger.info("before resample_audio")
     resample_audio(audio_files, sr_common)
 
     # Get a "base" track to compare all other tracks
     # For now use "longest" track
+    logger.info("before choose_base_file")
     base_file = choose_base_file(audio_files,results_dict, dur_list)
     base_filename = base_file.path.stem
 
@@ -338,9 +360,10 @@ def create_metadata(audio_path_list, result_file_path, video_path_list=None):
                    if file.path.stem != base_filename]
 
     # Run through all other tracks and compare to "base" track
+    logger.info("before compare_to_base")
     compare_to_base(base_file, other_files, sr_common, results_dict)
 
-    print('Finding true base signal from results...')
+    logger.info('Finding true base signal from results...')
     tshift_list = [warp_dict['tshift_from_base_sec']
                    for warp_dict in results_dict.values()]
     tshift_arr = np.array(tshift_list)
@@ -348,7 +371,7 @@ def create_metadata(audio_path_list, result_file_path, video_path_list=None):
     true_base_name = list(results_dict.keys())[true_base_idx]
     true_offset = np.abs(tshift_arr.min())
 
-    print('Padding audio to align signals...')
+    logger.info('Padding audio to align signals...')
     for filekey, warp_dict in results_dict.items():
         sig_path = Path(warp_dict['audio_path'])
         sig_path_str = str(sig_path.resolve())
@@ -368,7 +391,7 @@ def create_metadata(audio_path_list, result_file_path, video_path_list=None):
             warp_dict['is_base'] = True
             warp_dict['tshift_from_base_sec'] = 0.
 
-    
+    logger.info("before save_metadata")
     json_path = save_metadata(results_dict, result_file_path, 'metadata')
 
     return json_path
