@@ -24,6 +24,7 @@ async def upload_audio(audio: UploadFile = File(...)):
         print(f"File size: {audio.file._file.tell()} bytes")
         file_location = UPLOAD_DIRECTORY / audio.filename
         with open(file_location, "wb") as buffer:
+            audio.file.seek(0)  # Remet le pointeur au début du fichier
             shutil.copyfileobj(audio.file, buffer)
         print(f"File saved to {file_location}")
         
