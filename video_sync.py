@@ -202,32 +202,45 @@ def files_to_process(audio_path_list, video_path_list=None):
         video_path_list = ['']*len(audio_path_list)
     logger.info("2")
     for i, filepath in enumerate(audio_path_list):
+        logger.info("2.1")
         filepath = Path(filepath)
+        logger.info("2.2")
         if filepath.suffix in AUDIO_EXT:
+            logger.info("2.3")
             file = load_audio(filepath)
+            logger.info("2.4")
             audio_files.append(file)
+            logger.info("2.5")
             filename = file.path.stem
+            logger.info("2.6")
             sr_list.append(file.sr)
+            logger.info("2.7")
             dur_list.append(file.dur_sec)
+            logger.info("2.8")
             tot_MB += file._arr_size_MB
+            logger.info("2.9")
             if tot_MB > RAM_LIM:
                 print(RAM_WARNING)
             video_path = video_path_list[i]
+            logger.info("2.10")
             if video_path.endswith('.mov') or video_path.endswith('.MOV'):
+                logger.info("2.11")
                 rotation = get_video_rotation(video_path)
                 # Check if the rotation is a multiple of 90 degrees
+                logger.info("2.12")
                 if rotation % 90 == 0 and rotation % 180 != 0:
                         video_clip = VideoFileClip(video_path)
                         to_resize = 1
                 else:
                     to_resize = 0
-                    
+            logger.info("2.13")
             results_dict[filename] = {'video_path': video_path,
                                     'to_resize': to_resize,
                                     'audio_path': str(file.path.resolve()),
                                     'sr': file.sr,
                                     'dur_sec': file.dur_sec,
                                     }
+            logger.info("2.14")
         else:
             print('{0} is not supported...'.format(filepath.suffix))
             print('Skipping {0}...'.format(filepath.name))
