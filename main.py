@@ -5,7 +5,10 @@ from pathlib import Path
 from video_sync import create_metadata, simple_json
 import shutil
 from fastapi.responses import FileResponse
+import logging
+
 app = FastAPI()
+logging.basicConfig(level=logging.INFO)
 
 UPLOAD_DIRECTORY = Path("uploaded_audios")
 if not UPLOAD_DIRECTORY.exists():
