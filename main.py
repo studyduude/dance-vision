@@ -47,11 +47,11 @@ async def upload_audio(audio: UploadFile = File(...)):
             json_path = create_metadata(received_audios, METADATA_DIRECTORY)
             logging.debug(f"Metadata created at {json_path}")
             print(f"Metadata created at: {json_path}")
-            
+            print(list_audios())
             for audio_path in received_audios:
                 os.remove(audio_path)
             received_audios.clear()
-            print(list_audios())
+            
             # Retourner directement le fichier JSON comme réponse
             return FileResponse(json_path)
         else:
