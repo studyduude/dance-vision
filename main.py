@@ -21,6 +21,10 @@ if not METADATA_DIRECTORY.exists():
 print(f"Metadata directory is set to {METADATA_DIRECTORY.absolute()}")
 received_audios = []
 
+@app.get("/list-audios/")
+def list_audios():
+    files = list(Path("/app/uploaded_audios/").glob('*'))
+    return {"files": [str(file) for file in files]}
 
 
 @app.post("/upload-audio/")
