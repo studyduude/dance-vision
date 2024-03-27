@@ -5,6 +5,7 @@ from pathlib import Path
 import shutil
 import logging
 from uuid import UUID
+from video_sync import create_metadata
 
 app = FastAPI()
 logging.basicConfig(level=logging.INFO)
