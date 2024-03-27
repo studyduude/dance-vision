@@ -27,6 +27,24 @@ def list_audios():
     return {"files": [str(file) for file in files]}
 
 
+@app.delete("/delete-all-audios/")
+def delete_all_audios():
+    global received_audios
+    try:
+        # Parcourir tous les chemins de fichiers stockés dans received_audios
+        for audio_path_str in received_audios:
+            audio_path = Path(audio_path_str)
+            if audio_path.exists():
+                audio_path.unlink()  # Supprimer le fichier
+                print(f"Deleted {audio_path_str}")
+
+        # Vider la liste received_audios après la suppression des fichiers
+        received_audios = []
+
+        return JSONResponse(content={"message": "All audio files have been deleted."})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Could not delete the audio files: {e}")
+
 @app.post("/upload-audio/")
 async def upload_audio(audio: UploadFile = File(...)):
     content = await audio.read()
