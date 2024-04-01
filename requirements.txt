@@ -6,3 +6,5 @@ opencv-python==4.9.0.80
 fastapi==0.110.0
 python-multipart==0.0.5
 uvicorn==0.28.0
+audioread
+mediapipe==0.10.9
